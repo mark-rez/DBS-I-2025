@@ -5,12 +5,8 @@ import de.hpi.dbs1.entities.Actor;
 import de.hpi.dbs1.entities.Movie;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.sql.*;
+import java.util.*;
 import java.util.logging.Logger;
 
 @ChosenImplementation(true)
@@ -27,15 +23,32 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
     @Override
     public List<Movie> queryMovies(@NotNull Connection connection, @NotNull String keywords) throws SQLException {
         logger.info(keywords);
+
+        String movieQuery =
+            """
+            SELECT t.tconst, t."primaryTitle", t."startYear", t.genres
+            FROM tmovies t
+            WHERE t."primaryTitle" ILIKE ?
+            ORDER BY t."primaryTitle" ASC, t."startYear" ASC
+            """;
+
         List<Movie> movies = new ArrayList<>();
 
-		/*
-		var myMovie = new Movie("??????????", "My Movie", 2023, Set.of("Indie"));
-		myMovie.actorNames.add("Myself");
-		movies.add(myMovie);
-		*/
+        PreparedStatement ps = connection.prepareStatement(movieQuery);
+        ps.setString(1, "%" + keywords + "%"); // Replace ? in movieQuery with '%keyword%'
+        ResultSet rs = ps.executeQuery();
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        while (rs.next()) {
+            String tconst = rs.getString("tconst");
+            String title = rs.getString("primaryTitle");
+            int year = rs.getInt("startYear");
+            String[] genres = (String[]) rs.getArray("genres").getArray();
+
+            movies.add(new Movie(tconst, title, year, Set.of(genres)));
+        }
+        rs.close();
+        ps.close();
+        return movies;
     }
 
     @Override
