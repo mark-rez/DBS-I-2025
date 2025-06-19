@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-@ChosenImplementation(false)
+@ChosenImplementation(true)
 public class JDBCExerciseJavaImplementation implements JDBCExercise {
 
     Logger logger = Logger.getLogger(this.getClass().getSimpleName());
