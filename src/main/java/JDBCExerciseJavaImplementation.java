@@ -43,12 +43,39 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
             String title = rs.getString("primaryTitle");
             int year = rs.getInt("startYear");
             String[] genres = (String[]) rs.getArray("genres").getArray();
+            List<String> actorNames = getActorNamesForMovie(connection, tconst);
 
-            movies.add(new Movie(tconst, title, year, Set.of(genres)));
+            Movie movie = new Movie(tconst, title, year, Set.of(genres));
+            movie.actorNames.addAll(actorNames);
+            movies.add(movie);
         }
         rs.close();
         ps.close();
         return movies;
+    }
+
+    public List<String> getActorNamesForMovie(@NotNull Connection connection, @NotNull String tconst) throws SQLException {
+        List<String> actorNames = new ArrayList<>();
+        String actorNamesQuery =
+            """
+            SELECT DISTINCT primaryname
+            FROM nbasics, tprincipals
+            WHERE tprincipals."nconst" = nbasics."nconst" AND
+            tprincipals."tconst" = ? AND
+            (category = 'actor' OR category = 'actress')
+            ORDER BY primaryname ASC;
+            """;
+
+        PreparedStatement ps = connection.prepareStatement(actorNamesQuery);
+        ps.setString(1, tconst);
+        ResultSet rs = ps.executeQuery();
+        
+        while (rs.next()) {
+            actorNames.add(rs.getString("primaryname"));
+        }
+        rs.close();
+        ps.close();
+        return actorNames;
     }
 
     @Override
