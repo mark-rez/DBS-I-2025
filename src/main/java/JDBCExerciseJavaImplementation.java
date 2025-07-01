@@ -81,8 +81,96 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
     @Override
     public List<Actor> queryActors(@NotNull Connection connection, @NotNull String keywords) throws SQLException {
         logger.info(keywords);
+
+        String actorQuery =
+                """
+                SELECT b."nconst", b."primaryname", COUNT(DISTINCT p."tconst") as appearances
+                FROM nbasics b, tprincipals p
+                WHERE b."nconst" = p."nconst" AND 
+                b."primaryname" ILIKE ? AND
+                (p."category" = 'actor' OR p."category" = 'actress')
+                GROUP BY b."nconst", b."primaryname"
+                ORDER BY appearances DESC
+                LIMIT 5;
+                """;
+
         List<Actor> actors = new ArrayList<>();
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        PreparedStatement ps = connection.prepareStatement(actorQuery);
+        ps.setString(1, "%" + keywords + "%");
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+            Actor actor = new Actor(rs.getString("nconst"), rs.getString("primaryname"));
+            actor.playedIn.addAll(getRecentMoviesForActor(connection, actor.nConst));
+            actor.costarNameToCount.putAll(getCostarsForActor(connection, actor.nConst));
+            actors.add(actor);
+        }
+
+        rs.close();
+        ps.close();
+
+        return actors;
+    }
+
+    public List<String> getRecentMoviesForActor(@NotNull Connection connection, @NotNull String nconst) throws SQLException {
+
+        String movieQuery =
+                """
+                SELECT DISTINCT m."primaryTitle", m."startYear"
+                FROM tprincipals p, tmovies m
+                WHERE p."nconst" = ? AND p."tconst" = m."tconst" AND
+                (p."category" = 'actor' OR p."category" = 'actress')
+                ORDER BY m."startYear" DESC, m."primaryTitle" ASC
+                LIMIT 5;
+                """;
+
+        List<String> movieNames = new ArrayList<>();
+
+        PreparedStatement ps = connection.prepareStatement(movieQuery);
+        ps.setString(1, nconst);
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+            movieNames.add(rs.getString("primaryTitle"));
+        }
+
+        rs.close();
+        ps.close();
+
+        return movieNames;
+    }
+
+    public Map<String, Integer> getCostarsForActor(@NotNull Connection connection, @NotNull String nconst) throws SQLException {
+
+        String costarQuery =
+                """
+                SELECT b."primaryname", COUNT(DISTINCT p1."tconst") AS shared_films
+                FROM tprincipals p1, tprincipals p2, nbasics b
+                WHERE p1."tconst" = p2."tconst" AND 
+                p2."nconst" = b."nconst" AND 
+                p1."nconst" = ? AND 
+                p2."nconst" != p1."nconst" AND 
+                (p1."category" = 'actor' OR p1."category" = 'actress') AND 
+                (p2."category" = 'actor' OR p2."category" = 'actress')
+                GROUP BY b."primaryname"
+                ORDER BY shared_films DESC, b."primaryname" ASC
+                LIMIT 5;
+                """;
+
+        Map<String, Integer> costars = new LinkedHashMap<>();
+
+        PreparedStatement ps = connection.prepareStatement(costarQuery);
+        ps.setString(1, nconst);
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+            costars.put(rs.getString("primaryname"), rs.getInt("shared_films"));
+        }
+
+        rs.close();
+        ps.close();
+
+        return costars;
     }
 }
