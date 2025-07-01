@@ -145,7 +145,7 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
 
         String costarQuery =
                 """
-                SELECT b."primaryname", COUNT(DISTINCT p1."tconst") AS shared_films
+                SELECT DISTINCT b."primaryname", COUNT(DISTINCT p1."tconst") AS shared_films
                 FROM tprincipals p1, tprincipals p2, nbasics b
                 WHERE p1."tconst" = p2."tconst" AND 
                 p2."nconst" = b."nconst" AND 
