@@ -49,8 +49,10 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
             movie.actorNames.addAll(actorNames);
             movies.add(movie);
         }
+
         rs.close();
         ps.close();
+
         return movies;
     }
 
@@ -73,8 +75,10 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
         while (rs.next()) {
             actorNames.add(rs.getString("primaryname"));
         }
+
         rs.close();
         ps.close();
+
         return actorNames;
     }
 
@@ -90,7 +94,7 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
                 b."primaryname" ILIKE ? AND
                 (p."category" = 'actor' OR p."category" = 'actress')
                 GROUP BY b."nconst", b."primaryname"
-                ORDER BY appearances DESC
+                ORDER BY appearances DESC, primaryname ASC
                 LIMIT 5;
                 """;
 
@@ -114,7 +118,6 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
     }
 
     public List<String> getRecentMoviesForActor(@NotNull Connection connection, @NotNull String nconst) throws SQLException {
-
         String movieQuery =
                 """
                 SELECT DISTINCT m."primaryTitle", m."startYear"
@@ -142,7 +145,6 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
     }
 
     public Map<String, Integer> getCostarsForActor(@NotNull Connection connection, @NotNull String nconst) throws SQLException {
-
         String costarQuery =
                 """
                 SELECT DISTINCT b."primaryname", COUNT(DISTINCT p1."tconst") AS shared_films
@@ -153,7 +155,7 @@ public class JDBCExerciseJavaImplementation implements JDBCExercise {
                 p2."nconst" != p1."nconst" AND 
                 (p1."category" = 'actor' OR p1."category" = 'actress') AND 
                 (p2."category" = 'actor' OR p2."category" = 'actress')
-                GROUP BY b."primaryname"
+                GROUP BY b."nconst", b."primaryname"
                 ORDER BY shared_films DESC, b."primaryname" ASC
                 LIMIT 5;
                 """;
