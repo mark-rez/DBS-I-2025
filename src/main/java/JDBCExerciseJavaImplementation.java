@@ -1,3 +1,4 @@
+// Authors: Mark Reznikov, Jan Weinsheimer
 import de.hpi.dbs1.ChosenImplementation;
 import de.hpi.dbs1.ConnectionConfig;
 import de.hpi.dbs1.JDBCExercise;
